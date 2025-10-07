@@ -9,6 +9,18 @@ public class GameManager
     private float gameTimer = 0f;
     private int score = 0;
 
+    // Game states
+    public enum GameState
+    {
+        Menu,
+        Playing,
+        Paused, 
+        GameOver
+    }
+
+    private GameState currentState = GameState.Menu;
+
+    // Blocks values
     private List<BlockTemplate> availableBlocks = new();
     private int selectedBlockIndex = -1;
     private Vector2 dragOffset;
@@ -30,12 +42,73 @@ public class GameManager
 
     private void SpawnNewBlocks()
     {
-        availableBlocks.Clear();
-        for (int i = 0; i < 3; i++)
-            availableBlocks.Add(new BlockSquare());
+        BlockTemplate[] possibleBlocks = {
+        new BlockSingle(),
+        new BlockSquare(),
+        new BlockLine(),
+        new BlockL(),
+        new BlockT(),
+        new BlockZ()
+    };
+
+    availableBlocks.Clear();
+    for (int i = 0; i < 3; i++)
+    {
+        int rand = Raylib.GetRandomValue(0, possibleBlocks.Length - 1);
+        availableBlocks.Add(possibleBlocks[rand]);
+    };
     }
 
     public void Update()
+    {
+        switch (currentState)
+        {
+            case GameState.Menu:
+                DrawMainMenu();
+                UpdateMainMenu();
+                break;
+
+            case GameState.Playing:
+                DrawGameplay();
+                UpdateGameplay();
+                break;
+            
+            //  case GameState.Paused:
+            //     DrawPaused();
+            //     break;
+
+            // case GameState.GameOver:
+                //     UpdateGameOver();
+                //     break;
+        }
+    }
+
+    // ----------- GAME STATE METHODS -----------
+   private void UpdateMainMenu()
+    {
+        Rectangle startButton = new Rectangle(50, 150, 200, 60);
+
+        if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), startButton))
+        {
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+            {
+                NewGame();
+                currentState = GameState.Playing;
+            }
+        }
+
+        Rectangle loadButton = new Rectangle(50, 230, 200, 60);
+
+        if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), loadButton))
+        {
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+            {
+                // TODO: add LoadGame() later
+            }
+        }
+    }
+
+    private void UpdateGameplay()
     {
         gameTimer += Raylib.GetFrameTime();
         Vector2 mouse = Raylib.GetMousePosition();
@@ -62,7 +135,6 @@ public class GameManager
             if (Raylib.IsMouseButtonReleased(MouseButton.Left))
             {
                 isDragging = false;
-                // Later: check if dropped inside grid here
             }
         }
 
@@ -84,14 +156,54 @@ public class GameManager
                     GridManager.PlaceBlock(block, adjustedRow, adjustedCol);
                     availableBlocks.RemoveAt(selectedBlockIndex);
                     selectedBlockIndex = -1;
-                    score += 10;
+                    //score += 10;
+
+                    if (availableBlocks.Count == 0)
+                        SpawnNewBlocks();
                 }
             }
         }
     }
 
-    public void Draw()
+    // ---------- DRAW METHODS ----------
+    private void DrawMainMenu()
     {
+        Raylib.DrawText("TEN-TEN CLONE", screenWidth / 2 - 170, 70, 40, ColorUtils.FromHex("#212610"));
+
+        // sTART BUTTON
+        Rectangle startButton = new Rectangle(50, 150, 200, 60);
+        Raylib.DrawRectangleRec(startButton, ColorUtils.FromHex("#A9C25D"));
+        Raylib.DrawRectangleLinesEx(startButton, 3, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("NEW", 70, 165, 30, ColorUtils.FromHex("#212610"));
+
+        // Load game
+        Rectangle loadButton = new Rectangle(50, 230, 200, 60);
+        Raylib.DrawRectangleRec(loadButton, ColorUtils.FromHex("#A9C25D"));
+        Raylib.DrawRectangleLinesEx(loadButton, 3, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("LOAD", 70, 245, 30, ColorUtils.FromHex("#212610"));
+
+        // Instructions
+        int panelWidth = 290;
+        int panelX = 270;
+        int panelY = 150;
+        int panelHeight = 230;
+
+        Rectangle instructionsPanel = new Rectangle(panelX, panelY, panelWidth, panelHeight);
+        Raylib.DrawRectangleRec(instructionsPanel, ColorUtils.FromHex("#C9DABF"));
+        Raylib.DrawRectangleLinesEx(instructionsPanel, 3, ColorUtils.FromHex("#212610"));
+
+        // Text
+        int textX = panelX + 15;
+        int textY = panelY + 15;
+
+        Raylib.DrawText("Keys:", textX, textY, 28, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("'R' : Rotate blocks", textX, textY + 40, 20, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("'ESC' : Pause game", textX, textY + 70, 20, ColorUtils.FromHex("#212610"));
+    }
+
+    public void DrawGameplay()
+    {
+        // Game Info
         int minutes = (int)(gameTimer / 60);
         int seconds = (int)(gameTimer % 60);
         Raylib.DrawText($"{minutes}:{seconds:D2}", screenWidth - 50, screenHeight - 20, 20, ColorUtils.FromHex("#212610"));
@@ -121,12 +233,12 @@ public class GameManager
 
     private Vector2 GetBlockPosition(int index)
     {
-        return new Vector2(screenWidth - 150, 60 + index * 120);
+        return new Vector2(screenWidth - 170, 60 + index * 100);
     }
 
     private void DrawBlock(BlockTemplate block, int posX, int posY, bool isSelected)
     {
-        int size = 35;
+        int size = 40;
         for (int row = 0; row < block.Height; row++)
         {
             for (int col = 0; col < block.Width; col++)

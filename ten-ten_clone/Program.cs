@@ -21,11 +21,8 @@ class Program
         {
             Raylib.BeginDrawing();
             Raylib.ClearBackground(ColorUtils.FromHex("#969D7C"));
-
+            
             game.Update();
-            game.Draw();
-
-            GridRenderer.DrawGrid();
 
             Raylib.EndDrawing();
         }
