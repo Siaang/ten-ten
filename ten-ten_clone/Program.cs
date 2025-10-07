@@ -21,6 +21,7 @@ class Program
         {
             Raylib.BeginDrawing();
             Raylib.ClearBackground(ColorUtils.FromHex("#969D7C"));
+            Raylib.SetExitKey(KeyboardKey.Null);
             
             game.Update();
 

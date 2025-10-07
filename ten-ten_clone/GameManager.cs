@@ -73,18 +73,20 @@ public class GameManager
                 UpdateGameplay();
                 break;
             
-            //  case GameState.Paused:
-            //     DrawPaused();
-            //     break;
+             case GameState.Paused:
+                DrawPaused();
+                UpdatePaused();
+                break;
 
-            // case GameState.GameOver:
-                //     UpdateGameOver();
-                //     break;
+            case GameState.GameOver:
+                DrawGameOver();
+                UpdateGameOver();
+                break;
         }
     }
 
     // ----------- GAME STATE METHODS -----------
-   private void UpdateMainMenu()
+    private void UpdateMainMenu()
     {
         Rectangle startButton = new Rectangle(50, 150, 200, 60);
 
@@ -96,20 +98,23 @@ public class GameManager
                 currentState = GameState.Playing;
             }
         }
-
-        Rectangle loadButton = new Rectangle(50, 230, 200, 60);
-
-        if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), loadButton))
-        {
-            if (Raylib.IsMouseButtonPressed(MouseButton.Left))
-            {
-                // TODO: add LoadGame() later
-            }
-        }
     }
-
+    
     private void UpdateGameplay()
     {
+        // pause 
+         if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+        {
+            currentState = GameState.Paused;
+            return; 
+        }
+
+        // Check for Game Over
+        if (IsGameOver())
+        {
+            currentState = GameState.GameOver;
+        }
+
         gameTimer += Raylib.GetFrameTime();
         Vector2 mouse = Raylib.GetMousePosition();
 
@@ -168,11 +173,46 @@ public class GameManager
             }
         }
 
-        // Rotate 
+        // rotate blocks 
         if (selectedBlockIndex != -1 && Raylib.IsKeyPressed(KeyboardKey.R))
         {
             availableBlocks[selectedBlockIndex].RotateClockwise();
         }
+    }
+
+    private void UpdatePaused()
+    {
+        if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+        {
+            currentState = GameState.Playing;
+        }
+    }
+
+    private void UpdateGameOver()
+    {
+        if (Raylib.IsKeyPressed(KeyboardKey.Space))
+        {
+            NewGame();
+            currentState = GameState.Playing;
+        }
+    }
+
+    private bool IsGameOver()
+    {
+        foreach (var block in availableBlocks)
+        {
+            for (int row = 0; row <= GridRenderer.TileCount - block.Height; row++)
+            {
+                for (int col = 0; col <= GridRenderer.TileCount - block.Width; col++)
+                {
+                    if (GridManager.CanPlaceBlock(block, row, col))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     // ---------- DRAW METHODS ----------
@@ -180,19 +220,19 @@ public class GameManager
     {
         Raylib.DrawText("TEN-TEN CLONE", screenWidth / 2 - 170, 70, 40, ColorUtils.FromHex("#212610"));
 
-        // sTART BUTTON
+        // start button
         Rectangle startButton = new Rectangle(50, 150, 200, 60);
         Raylib.DrawRectangleRec(startButton, ColorUtils.FromHex("#A9C25D"));
         Raylib.DrawRectangleLinesEx(startButton, 3, ColorUtils.FromHex("#212610"));
-        Raylib.DrawText("NEW", 70, 165, 30, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("START", 95, 165, 30, ColorUtils.FromHex("#212610"));
 
-        // Load game
+        // load button
         Rectangle loadButton = new Rectangle(50, 230, 200, 60);
         Raylib.DrawRectangleRec(loadButton, ColorUtils.FromHex("#A9C25D"));
         Raylib.DrawRectangleLinesEx(loadButton, 3, ColorUtils.FromHex("#212610"));
-        Raylib.DrawText("LOAD", 70, 245, 30, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("LOAD", 105, 245, 30, ColorUtils.FromHex("#212610"));
 
-        // Instructions
+        // instructions
         int panelWidth = 290;
         int panelX = 270;
         int panelY = 150;
@@ -202,7 +242,7 @@ public class GameManager
         Raylib.DrawRectangleRec(instructionsPanel, ColorUtils.FromHex("#C9DABF"));
         Raylib.DrawRectangleLinesEx(instructionsPanel, 3, ColorUtils.FromHex("#212610"));
 
-        // Text
+        // instructions text
         int textX = panelX + 15;
         int textY = panelY + 15;
 
@@ -214,7 +254,7 @@ public class GameManager
 
     public void DrawGameplay()
     {
-        // Game Info
+        // game infos
         int minutes = (int)(gameTimer / 60);
         int seconds = (int)(gameTimer % 60);
         Raylib.DrawText($"{minutes}:{seconds:D2}", screenWidth - 50, screenHeight - 20, 20, ColorUtils.FromHex("#212610"));
@@ -226,6 +266,37 @@ public class GameManager
 
     }
 
+    private void DrawPaused()
+    {
+        Raylib.DrawRectangle(0, 0, screenWidth, screenHeight, new Color(0, 0, 0, 150));
+
+        string pauseText = "GAME PAUSED";
+        int textWidth = Raylib.MeasureText(pauseText, 50);
+        Raylib.DrawText(pauseText, screenWidth / 2 - textWidth / 2, screenHeight / 2 - 50, 50, Color.RayWhite);
+
+        string subText = "Press ESC to resume";
+        int subTextWidth = Raylib.MeasureText(subText, 20);
+        Raylib.DrawText(subText, screenWidth / 2 - subTextWidth / 2, screenHeight / 2 + 20, 20, Color.RayWhite);
+    }
+
+     private void DrawGameOver()
+    {
+        Raylib.DrawRectangle(0, 0, screenWidth, screenHeight, new Color(0, 0, 0, 180));
+
+        string gameOverText = "GAME OVER";
+        int textWidth = Raylib.MeasureText(gameOverText, 50);
+        Raylib.DrawText(gameOverText, screenWidth / 2 - textWidth / 2, screenHeight / 2 - 80, 50, Color.RayWhite);
+
+        string scoreText = $"Final Score: {score}";
+        int scoreWidth = Raylib.MeasureText(scoreText, 30);
+        Raylib.DrawText(scoreText, screenWidth / 2 - scoreWidth / 2, screenHeight / 2, 30, Color.RayWhite);
+
+        string restartText = "Press SPACE to restart";
+        int restartWidth = Raylib.MeasureText(restartText, 25);
+        Raylib.DrawText(restartText, screenWidth / 2 - restartWidth / 2, screenHeight / 2 + 50, 25, Color.RayWhite);
+    }
+
+    // blocks draw
     private void DrawAvailableBlocks()
     {
         for (int i = 0; i < availableBlocks.Count; i++)

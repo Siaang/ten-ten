@@ -20,6 +20,7 @@ public static class GridManager
                 int gridR = startRow + r;
                 int gridC = startCol + c;
 
+                // out of bounds or already filled
                 if (gridR < 0 || gridR >= Rows || gridC < 0 || gridC >= Cols)
                     return false;
                 if (grid[gridR, gridC])
@@ -31,62 +32,49 @@ public static class GridManager
 
     public static int PlaceBlock(BlockTemplate block, int startRow, int startCol)
     {
+        // place block cells into grid
         for (int r = 0; r < block.Height; r++)
         {
             for (int c = 0; c < block.Width; c++)
             {
-                if (!block.Shape[r, c]) continue;
-                grid[startRow + r, startCol + c] = true;
-                gridColors[startRow + r, startCol + c] = block.Color;
+                if (block.Shape[r, c])
+                {
+                    grid[startRow + r, startCol + c] = true;
+                    gridColors[startRow + r, startCol + c] = block.Color;
+                }
             }
         }
 
-        return ClearFullLines(); // check for clears after placement
-    }
-
-    private static int ClearFullLines()
-    {
-        int linesCleared = 0;
-
-        // Check rows
+        // check and clear full rows only
+        int cleared = 0;
         for (int r = 0; r < Rows; r++)
         {
-            bool full = true;
-            for (int c = 0; c < Cols; c++)
+            if (IsRowFull(r))
             {
-                if (!grid[r, c]) { full = false; break; }
-            }
-
-            if (full)
-            {
-                for (int c = 0; c < Cols; c++)
-                {
-                    grid[r, c] = false;
-                }
-                linesCleared++;
+                ClearRow(r);
+                cleared++;
             }
         }
 
-        // Check columns
+        return cleared;
+    }
+
+    private static bool IsRowFull(int row)
+    {
         for (int c = 0; c < Cols; c++)
         {
-            bool full = true;
-            for (int r = 0; r < Rows; r++)
-            {
-                if (!grid[r, c]) { full = false; break; }
-            }
-
-            if (full)
-            {
-                for (int r = 0; r < Rows; r++)
-                {
-                    grid[r, c] = false;
-                }
-                linesCleared++;
-            }
+            if (!grid[row, c]) return false;
         }
+        return true;
+    }
 
-        return linesCleared;
+    private static void ClearRow(int row)
+    {
+        for (int c = 0; c < Cols; c++)
+        {
+            grid[row, c] = false;
+            gridColors[row, c] = Color.Blank;
+        }
     }
 
     public static void DrawFilledCells()
@@ -100,8 +88,19 @@ public static class GridManager
                     int x = GridRenderer.StartPosX + col * GridRenderer.CellSize;
                     int y = GridRenderer.StartPosY + row * GridRenderer.CellSize;
                     Raylib.DrawRectangle(x, y, GridRenderer.CellSize, GridRenderer.CellSize, gridColors[row, col]);
+                    Raylib.DrawRectangleLines(x, y, GridRenderer.CellSize, GridRenderer.CellSize, ColorUtils.FromHex("#212610"));
                 }
             }
         }
+    }
+
+    public static void ResetGrid()
+    {
+        for (int r = 0; r < Rows; r++)
+            for (int c = 0; c < Cols; c++)
+            {
+                grid[r, c] = false;
+                gridColors[r, c] = Color.Blank;
+            }
     }
 }
