@@ -196,9 +196,10 @@ public class GameManager
         int textX = panelX + 15;
         int textY = panelY + 15;
 
-        Raylib.DrawText("Keys:", textX, textY, 28, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("Keybinds:", textX, textY, 28, ColorUtils.FromHex("#212610"));
         Raylib.DrawText("'R' : Rotate blocks", textX, textY + 40, 20, ColorUtils.FromHex("#212610"));
-        Raylib.DrawText("'ESC' : Pause game", textX, textY + 70, 20, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("'ESC' : Pause/Unpause", textX, textY + 70, 20, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("'S' : Save game", textX, textY + 100, 20, ColorUtils.FromHex("#212610"));
     }
 
     public void DrawGameplay()
