@@ -5,9 +5,8 @@ public class BlockSingle : BlockTemplate
         new bool[,] {
             { true }
         },
-        ColorUtils.FromHex("#5C7440")
-    )
-    { }
+        ColorUtils.FromHex("#5C7440") 
+    ) { }
 }
 
 // BOX
@@ -18,9 +17,8 @@ public class BlockSquare : BlockTemplate
             { true, true },
             { true, true }
         },
-        ColorUtils.FromHex("#5C7440")
-    )
-    { }
+        ColorUtils.FromHex("#A9C25D") 
+    ) { }
 }
 
 // LINE
@@ -30,7 +28,7 @@ public class BlockLine : BlockTemplate
         new bool[,] {
             { true, true, true, true }
         },
-        ColorUtils.FromHex("#5C7440")
+        ColorUtils.FromHex("#4B8073") 
     ) { }
 }
 
@@ -43,7 +41,7 @@ public class BlockL : BlockTemplate
             { true, false },
             { true, true }
         },
-        ColorUtils.FromHex("#5C7440")
+        ColorUtils.FromHex("#C9B074") 
     ) { }
 }
 
@@ -55,10 +53,10 @@ public class BlockT : BlockTemplate
             { true, true, true },
             { false, true, false }
         },
-        ColorUtils.FromHex("#5C7440")
-    )
-    { }
+        ColorUtils.FromHex("#D89048")
+    ) { }
 }
+
 // Zigzag 
 public class BlockZ : BlockTemplate
 {
@@ -67,6 +65,6 @@ public class BlockZ : BlockTemplate
             { true, true, false },
             { false, true, true }
         },
-        ColorUtils.FromHex("#5C7440")
+        ColorUtils.FromHex("#B15E5E")
     ) { }
 }

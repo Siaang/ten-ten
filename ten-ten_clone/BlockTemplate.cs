@@ -13,4 +13,19 @@ public class BlockTemplate
         Shape = shape;
         Color = color;
     }
+
+    public void RotateClockwise()
+    {
+        bool[,] rotated = new bool[Width, Height];
+
+        for (int row = 0; row < Height; row++)
+        {
+            for (int col = 0; col < Width; col++)
+            {
+                rotated[col, Height - row - 1] = Shape[row, col];
+            }
+        }
+
+        Shape = rotated;
+    }
 }

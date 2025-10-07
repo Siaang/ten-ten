@@ -138,7 +138,8 @@ public class GameManager
             }
         }
 
-        if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+        // block placing
+       if (Raylib.IsMouseButtonReleased(MouseButton.Left))
         {
             isDragging = false;
 
@@ -153,15 +154,24 @@ public class GameManager
 
                 if (GridManager.CanPlaceBlock(block, adjustedRow, adjustedCol))
                 {
-                    GridManager.PlaceBlock(block, adjustedRow, adjustedCol);
+                    int cleared = GridManager.PlaceBlock(block, adjustedRow, adjustedCol);
+
+                    if (cleared > 0)
+                        score += cleared * 100;
                     availableBlocks.RemoveAt(selectedBlockIndex);
                     selectedBlockIndex = -1;
-                    //score += 10;
+
 
                     if (availableBlocks.Count == 0)
                         SpawnNewBlocks();
                 }
             }
+        }
+
+        // Rotate 
+        if (selectedBlockIndex != -1 && Raylib.IsKeyPressed(KeyboardKey.R))
+        {
+            availableBlocks[selectedBlockIndex].RotateClockwise();
         }
     }
 
