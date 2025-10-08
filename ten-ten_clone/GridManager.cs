@@ -1,5 +1,4 @@
 using Raylib_cs;
-using System.Collections.Generic;
 
 public static class GridManager
 {
@@ -7,7 +6,7 @@ public static class GridManager
     public static int Cols => GridRenderer.TileCount;
 
     private static bool[,] grid = new bool[Rows, Cols];
-    private static Color[,] gridColors = new Color[Rows, Cols]; // store colors per cell
+    private static Color[,] gridColors = new Color[Rows, Cols];
 
     public static bool CanPlaceBlock(BlockTemplate block, int startRow, int startCol)
     {
@@ -32,7 +31,6 @@ public static class GridManager
 
     public static int PlaceBlock(BlockTemplate block, int startRow, int startCol)
     {
-        // place block cells into grid
         for (int r = 0; r < block.Height; r++)
         {
             for (int c = 0; c < block.Width; c++)
@@ -45,7 +43,6 @@ public static class GridManager
             }
         }
 
-        // check and clear full rows only
         int cleared = 0;
         for (int r = 0; r < Rows; r++)
         {
@@ -102,5 +99,26 @@ public static class GridManager
                 grid[r, c] = false;
                 gridColors[r, c] = Color.Blank;
             }
+    }
+
+    public static bool[,] GetGrid() => grid;
+    public static Color[,] GetGridColors() => gridColors;
+
+    public static void SetGrid(bool[,] loadedGrid, Color[,] loadedColors)
+    {
+        int rows = loadedGrid.GetLength(0);
+        int cols = loadedGrid.GetLength(1);
+
+        grid = new bool[rows, cols];
+        gridColors = new Color[rows, cols];
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                grid[r, c] = loadedGrid[r, c];
+                gridColors[r, c] = loadedColors[r, c];
+            }
+        }
     }
 }

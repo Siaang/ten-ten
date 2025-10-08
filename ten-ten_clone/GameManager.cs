@@ -1,5 +1,4 @@
 using Raylib_cs;
-using System.Collections.Generic;
 using System.Numerics;
 
 public class GameManager
@@ -7,16 +6,19 @@ public class GameManager
     private int screenWidth;
     private int screenHeight;
     private float gameTimer = 0f;
-    private int score = 0;
+    private float saveMessageTimer = 0f;
 
     // Game states
     public enum GameState
     {
         Menu,
         Playing,
-        Paused, 
+        Paused,
         GameOver
     }
+
+    // Managers
+    private SoundManager soundManager;
 
     private GameState currentState = GameState.Menu;
 
@@ -30,14 +32,40 @@ public class GameManager
     {
         screenWidth = width;
         screenHeight = height;
-        NewGame();
+        currentState = GameState.Menu;
+
+        soundManager = new SoundManager();
+        soundManager.LoadAudio();
     }
 
     public void NewGame()
     {
+        soundManager.PlaySound("click");
+
         gameTimer = 0f;
-        score = 0;
         SpawnNewBlocks();
+        GridManager.ResetGrid();
+        ScoreManager.Reset();
+    }
+    
+    private void LoadGame()
+    {
+        soundManager.PlaySound("click");
+
+        if (SaveManager.LoadGame(out bool[,] grid, out Color[,] colors, out int score, out float timer))
+        {
+            GridManager.SetGrid(grid, colors);
+            ScoreManager.SetScore(score);
+            gameTimer = timer;
+
+            GridManager.DrawFilledCells();
+
+            Console.WriteLine("Game loaded successfully!");
+        }
+        else
+        {
+            Console.WriteLine("No save file found or failed to load.");
+        }
     }
 
     private void SpawnNewBlocks()
@@ -51,16 +79,19 @@ public class GameManager
         new BlockZ()
     };
 
-    availableBlocks.Clear();
-    for (int i = 0; i < 3; i++)
-    {
-        int rand = Raylib.GetRandomValue(0, possibleBlocks.Length - 1);
-        availableBlocks.Add(possibleBlocks[rand]);
-    };
+        availableBlocks.Clear();
+        for (int i = 0; i < 3; i++)
+        {
+            int rand = Raylib.GetRandomValue(0, possibleBlocks.Length - 1);
+            availableBlocks.Add(possibleBlocks[rand]);
+        }
+        ;
     }
 
     public void Update()
     {
+        soundManager.Update();
+
         switch (currentState)
         {
             case GameState.Menu:
@@ -72,8 +103,8 @@ public class GameManager
                 DrawGameplay();
                 UpdateGameplay();
                 break;
-            
-             case GameState.Paused:
+
+            case GameState.Paused:
                 DrawPaused();
                 UpdatePaused();
                 break;
@@ -89,6 +120,7 @@ public class GameManager
     private void UpdateMainMenu()
     {
         Rectangle startButton = new Rectangle(50, 150, 200, 60);
+        Rectangle loadButton = new Rectangle(50, 230, 200, 60);
 
         if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), startButton))
         {
@@ -98,24 +130,66 @@ public class GameManager
                 currentState = GameState.Playing;
             }
         }
+
+         if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), loadButton))
+    {
+        if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+        {
+            LoadGame();
+            currentState = GameState.Playing;
+        }
     }
-    
+    }
+
     private void UpdateGameplay()
     {
         // pause 
-         if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+        if (Raylib.IsKeyPressed(KeyboardKey.Q))
         {
+            soundManager.PlaySound("click");
+
             currentState = GameState.Paused;
-            return; 
+            return;
         }
 
-        // Check for Game Over
+        // game over
         if (IsGameOver())
         {
             currentState = GameState.GameOver;
         }
 
+        // return to main
+        if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+        {
+            soundManager.PlaySound("click");
+
+            currentState = GameState.Menu;
+        }
+
+        // save 
+        if (Raylib.IsKeyPressed(KeyboardKey.S))
+        {
+            soundManager.PlaySound("click");
+
+            saveMessageTimer = 2f;
+
+            SaveManager.SaveGame(
+                GridManager.GetGrid(),
+                GridManager.GetGridColors(),
+                ScoreManager.GetScore(),
+                gameTimer
+            );
+            Console.WriteLine("Game saved!");
+        }
+
+        if (saveMessageTimer > 0)
+        {
+            saveMessageTimer -= Raylib.GetFrameTime();
+        }
+
+        // Update stuff
         gameTimer += Raylib.GetFrameTime();
+        ScoreManager.Update(Raylib.GetFrameTime());
         Vector2 mouse = Raylib.GetMousePosition();
 
         if (!isDragging)
@@ -139,12 +213,14 @@ public class GameManager
         {
             if (Raylib.IsMouseButtonReleased(MouseButton.Left))
             {
+                soundManager.PlaySound("place");
+
                 isDragging = false;
             }
         }
 
         // block placing
-       if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+        if (Raylib.IsMouseButtonReleased(MouseButton.Left))
         {
             isDragging = false;
 
@@ -162,10 +238,12 @@ public class GameManager
                     int cleared = GridManager.PlaceBlock(block, adjustedRow, adjustedCol);
 
                     if (cleared > 0)
-                        score += cleared * 100;
+                        soundManager.PlaySound("clear");
+
+                    ScoreManager.AddScore(cleared);
+
                     availableBlocks.RemoveAt(selectedBlockIndex);
                     selectedBlockIndex = -1;
-
 
                     if (availableBlocks.Count == 0)
                         SpawnNewBlocks();
@@ -176,20 +254,30 @@ public class GameManager
         // rotate blocks 
         if (selectedBlockIndex != -1 && Raylib.IsKeyPressed(KeyboardKey.R))
         {
+            soundManager.PlaySound("rotate");
+
             availableBlocks[selectedBlockIndex].RotateClockwise();
+        }
+
+        // game over
+        if (currentState == GameState.GameOver)
+        {
+            soundManager.PlaySound("gameover");  
         }
     }
 
     private void UpdatePaused()
     {
-        if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+        if (Raylib.IsKeyPressed(KeyboardKey.Q))
         {
+            soundManager.PlaySound("click");
+
             currentState = GameState.Playing;
         }
     }
 
     private void UpdateGameOver()
-    {
+    {   
         if (Raylib.IsKeyPressed(KeyboardKey.Space))
         {
             NewGame();
@@ -248,8 +336,9 @@ public class GameManager
 
         Raylib.DrawText("Keybinds:", textX, textY, 28, ColorUtils.FromHex("#212610"));
         Raylib.DrawText("'R' : Rotate blocks", textX, textY + 40, 20, ColorUtils.FromHex("#212610"));
-        Raylib.DrawText("'ESC' : Pause/Unpause", textX, textY + 70, 20, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("'Q' : Pause/Unpause", textX, textY + 70, 20, ColorUtils.FromHex("#212610"));
         Raylib.DrawText("'S' : Save game", textX, textY + 100, 20, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText("'ESC' : Main menu", textX, textY + 130, 20, ColorUtils.FromHex("#212610"));
     }
 
     public void DrawGameplay()
@@ -257,13 +346,24 @@ public class GameManager
         // game infos
         int minutes = (int)(gameTimer / 60);
         int seconds = (int)(gameTimer % 60);
-        Raylib.DrawText($"{minutes}:{seconds:D2}", screenWidth - 50, screenHeight - 20, 20, ColorUtils.FromHex("#212610"));
-        Raylib.DrawText($"Score: {score}", 10, 10, 20, ColorUtils.FromHex("#212610"));
+
+        Raylib.DrawText($"{minutes}:{seconds:D2}", screenWidth - 70, screenHeight - 40, 20, ColorUtils.FromHex("#212610"));
+        Raylib.DrawText($"Score: {ScoreManager.GetScore()}", 10, 10, 20, ColorUtils.FromHex("#212610"));
+
+        int combo = ScoreManager.GetCombo();
+        if (combo > 0)
+        {
+            Raylib.DrawText($"Combo x{combo}", 10, 40, 20, ColorUtils.FromHex("#212610"));
+        }
+
+         if (saveMessageTimer > 0)
+        {
+            Raylib.DrawText($"Progress saved!", 10, screenHeight - 25, 20, ColorUtils.FromHex("#212610"));
+        }
 
         GridRenderer.DrawGrid();
         GridManager.DrawFilledCells();
         DrawAvailableBlocks();
-
     }
 
     private void DrawPaused()
@@ -274,7 +374,7 @@ public class GameManager
         int textWidth = Raylib.MeasureText(pauseText, 50);
         Raylib.DrawText(pauseText, screenWidth / 2 - textWidth / 2, screenHeight / 2 - 50, 50, Color.RayWhite);
 
-        string subText = "Press ESC to resume";
+        string subText = "Press Q to resume";
         int subTextWidth = Raylib.MeasureText(subText, 20);
         Raylib.DrawText(subText, screenWidth / 2 - subTextWidth / 2, screenHeight / 2 + 20, 20, Color.RayWhite);
     }
@@ -287,7 +387,7 @@ public class GameManager
         int textWidth = Raylib.MeasureText(gameOverText, 50);
         Raylib.DrawText(gameOverText, screenWidth / 2 - textWidth / 2, screenHeight / 2 - 80, 50, Color.RayWhite);
 
-        string scoreText = $"Final Score: {score}";
+        string scoreText = $"Final Score: {ScoreManager.GetScore()}";
         int scoreWidth = Raylib.MeasureText(scoreText, 30);
         Raylib.DrawText(scoreText, screenWidth / 2 - scoreWidth / 2, screenHeight / 2, 30, Color.RayWhite);
 

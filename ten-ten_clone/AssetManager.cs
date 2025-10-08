@@ -1,11 +1,72 @@
 using Raylib_cs;
 using System.Globalization;
 
-public class AssetsManager
+public class SoundManager
 {
-    public static Dictionary<string, Sound> Sounds = [];
+    private Music bgMusic;
+    private Dictionary<string, Sound> soundEffects = new();
 
-    public static Music MusicStream = new();
+    public void LoadAudio()
+    {
+        bgMusic = Raylib.LoadMusicStream("assets/background.mp3");
+        Raylib.PlayMusicStream(bgMusic);
+
+        soundEffects["click"] = Raylib.LoadSound("assets/click.wav");
+        soundEffects["clear"] = Raylib.LoadSound("assets/clear.wav");
+        soundEffects["gameover"] = Raylib.LoadSound("assets/gameover.wav");
+        soundEffects["rotate"] = Raylib.LoadSound("assets/rotate.wav");
+        soundEffects["place"] = Raylib.LoadSound("assets/place.wav");
+    }
+
+    public void Update()
+    {
+        Raylib.UpdateMusicStream(bgMusic);
+    }
+
+    public void Dispose()
+    {
+        Raylib.StopMusicStream(bgMusic);
+        Raylib.UnloadMusicStream(bgMusic);
+
+        foreach (var sound in soundEffects.Values)
+        {
+            Raylib.UnloadSound(sound);
+        }
+
+        soundEffects.Clear();
+    }
+
+    public void PlaySound(string name)
+    {
+        if (soundEffects.ContainsKey(name))
+        {
+            Raylib.PlaySound(soundEffects[name]);
+        }
+        else
+        {
+            System.Console.WriteLine($"Sound '{name}' not found.");
+        }
+    }
+
+    public void UnloadAudio()
+    {
+        Raylib.StopMusicStream(bgMusic);
+        Raylib.UnloadMusicStream(bgMusic);
+
+        foreach (var sound in soundEffects.Values)
+        {
+            Raylib.UnloadSound(sound);
+        }
+
+        Raylib.CloseAudioDevice();
+    }
+}
+public static class PlaySingle
+{
+    public static void PlaySound(string soundName)
+    {
+        Raylib.PlaySound(Raylib.LoadSound("res/" + soundName + ".wav"));
+    }
 }
 
 // ----------- ENABLES HEX COLORS -----------
